@@ -69,9 +69,79 @@ psql -h localhost -p 5432 -U shoe_user -d shoes_shop -v ON_ERROR_STOP=1 -f datab
 ```powershell
 python main.py
 ```
+## Запуск PostgreSQL через Docker Compose
 
+### Предварительные требования
+
+- Windows 10/11.
+- Установленный Docker Desktop.
+- Docker Compose V2.
+- Python и зависимости проекта.
+
+### Подготовка
+
+1. Скопировать `.env.example` в `.env`.
+2. Указать собственный пароль в переменной `POSTGRES_PASSWORD`.
+
+### Запуск базы данных
+
+Из корня проекта выполнить:
+
+```powershell
+docker compose config --quiet
+docker compose up --build -d
+docker compose ps
+```
+
+### Импорт базы данных
+
+```powershell
+docker compose cp database/shoe_store.sql db:/tmp/shoe_store.sql
+docker compose exec db psql -v ON_ERROR_STOP=1 -U shoe_user -d shoe_store -f /tmp/shoe_store.sql
+```
+
+### Подключение приложения
+
+Создать локальный `config.ini` рядом с `main.py`:
+
+```ini
+[database]
+host = localhost
+port = 5433
+name = shoe_store
+user = shoe_user
+password = ВАШ_ЛОКАЛЬНЫЙ_ПАРОЛЬ
+```
+
+Запустить приложение:
+
+```powershell
+python main.py
+```
+
+### Проверка подключения
+
+```powershell
+docker compose exec db pg_isready -U shoe_user -d shoe_store
+docker compose run --rm db-check
+```
+
+### Остановка
+
+```powershell
+docker compose stop
+```
+
+Для возобновления работы:
+
+```powershell
+docker compose start
+```
+
+Файлы `.env` и `config.ini` содержат локальные настройки и не должны публиковаться в GitHub.
 ## Настройки и безопасность
 
 - Не добавляйте `config.ini` и `.env` в Git.
+
 - Для нового компьютера создайте `config.ini` копированием `config.ini.example` и заполните собственными значениями.
 - Не храните пароли PostgreSQL в исходном коде или README.
