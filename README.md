@@ -76,3 +76,84 @@ python main.py
 - Не добавляйте `config.ini` и `.env` в Git.
 - Для нового компьютера создайте `config.ini` копированием `config.ini.example` и заполните собственными значениями.
 - Не храните пароли PostgreSQL в исходном коде или README.
+
+## Постоянное хранение и сети
+
+### Постоянное хранение данных
+
+Для хранения данных PostgreSQL используется именованный Docker volume `db_data`, подключённый к `/var/lib/postgresql/data`. Данные сохраняются при удалении и пересоздании контейнера.
+
+Перед изменением конфигурации рекомендуется создать резервную копию базы:
+
+```powershell
+docker compose exec db pg_dump -U shoe_user -d shoe_store -f /tmp/shoe_store_before_volume.sql
+docker compose cp db:/tmp/shoe_store_before_volume.sql ./backups/shoe_store_before_volume.sql
+```
+
+Для восстановления базы из резервной копии:
+
+```powershell
+docker compose cp ./backups/shoe_store_before_volume.sql db:/tmp/restore.sql
+docker compose exec db psql -v ON_ERROR_STOP=1 -U shoe_user -d shoe_store -f /tmp/restore.sql
+```
+
+### Сетевая конфигурация
+
+Контейнеры `db` и `db-check` подключены к пользовательской сети `shoe-backend` с драйвером `bridge`.
+
+- Контейнер `db-check` обращается к PostgreSQL по адресу `db:5432`.
+- Приложение Windows подключается к PostgreSQL через `localhost:5433`.
+- Порт PostgreSQL опубликован только на локальном интерфейсе `127.0.0.1`.
+
+### Запуск и проверка
+
+```powershell
+docker compose up --build -d
+docker compose ps
+docker compose run --rm db-check
+docker volume ls
+docker network ls
+```
+
+**Важно:** команда `docker compose down -v` удаляет именованные тома проекта и может привести к потере данных PostgreSQL. Не используйте её без необходимости и предварительной резервной копии.
+
+
+## Постоянное хранение и сети
+
+### Постоянное хранение данных
+
+Для хранения данных PostgreSQL используется именованный Docker volume `db_data`, подключённый к `/var/lib/postgresql/data`. Данные сохраняются при удалении и пересоздании контейнера.
+
+Перед изменением конфигурации рекомендуется создать резервную копию базы:
+
+```powershell
+docker compose exec db pg_dump -U shoe_user -d shoe_store -f /tmp/shoe_store_before_volume.sql
+docker compose cp db:/tmp/shoe_store_before_volume.sql ./backups/shoe_store_before_volume.sql
+```
+
+Для восстановления базы из резервной копии:
+
+```powershell
+docker compose cp ./backups/shoe_store_before_volume.sql db:/tmp/restore.sql
+docker compose exec db psql -v ON_ERROR_STOP=1 -U shoe_user -d shoe_store -f /tmp/restore.sql
+```
+
+### Сетевая конфигурация
+
+Контейнеры `db` и `db-check` подключены к пользовательской сети `shoe-backend` с драйвером `bridge`.
+
+- Контейнер `db-check` обращается к PostgreSQL по адресу `db:5432`.
+- Приложение Windows подключается к PostgreSQL через `localhost:5433`.
+- Порт PostgreSQL опубликован только на локальном интерфейсе `127.0.0.1`.
+
+### Запуск и проверка
+
+```powershell
+docker compose up --build -d
+docker compose ps
+docker compose run --rm db-check
+docker volume ls
+docker network ls
+```
+
+**Важно:** команда `docker compose down -v` удаляет именованные тома проекта и может привести к потере данных PostgreSQL. Не используйте её без необходимости и предварительной резервной копии.
